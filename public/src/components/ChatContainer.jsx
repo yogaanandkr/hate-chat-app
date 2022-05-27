@@ -69,6 +69,35 @@ export default function ChatContainer({ currentChat, socket }) {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const badWordFilter = (msg) => {
+    const encodedParams = new URLSearchParams();
+    encodedParams.append("censor-character", "*");
+    encodedParams.append(
+      msg,
+      "This text does not actually contain any bad words!"
+    );
+
+    const options = {
+      method: "POST",
+      url: "https://neutrinoapi-bad-word-filter.p.rapidapi.com/bad-word-filter",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        "X-RapidAPI-Host": "neutrinoapi-bad-word-filter.p.rapidapi.com",
+        "X-RapidAPI-Key": "4ce48b2375msh4b25510400d9553p1cb639jsn72d4a91980be",
+      },
+      data: encodedParams,
+    };
+
+    axios
+      .request(options)
+      .then(function (response) {
+        console.log(response.data);
+      })
+      .catch(function (error) {
+        console.error(error);
+      });
+  };
+
   return (
     <Container>
       <div className="chat-header">
@@ -86,6 +115,7 @@ export default function ChatContainer({ currentChat, socket }) {
         <Logout />
       </div>
       <div className="chat-messages">
+        {console.log("messages", messages)}
         {messages.map((message) => {
           return (
             <div ref={scrollRef} key={uuidv4()}>

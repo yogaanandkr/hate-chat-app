@@ -4,8 +4,21 @@ import { IoMdSend } from "react-icons/io";
 import styled from "styled-components";
 import axios from "axios";
 import Picker from "emoji-picker-react";
+import { ToastContainer, toast } from "react-toastify";
+import { setBadWordsCount } from "../utils/APIRoutes";
+import { useNavigate } from "react-router-dom";
+import Logout from "./Logout";
 
 export default function ChatInput({ handleSendMsg }) {
+  const navigate = useNavigate();
+
+  const toastOptions = {
+    position: "bottom-right",
+    autoClose: 5000,
+    pauseOnHover: true,
+    draggable: true,
+    theme: "dark",
+  };
   const [msg, setMsg] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const handleEmojiPickerhideShow = () => {
@@ -47,7 +60,7 @@ export default function ChatInput({ handleSendMsg }) {
     var Filter = require("bad-words"),
       filter = new Filter();
 
-    console.log(filter.clean("Don't be an assh0le"));
+    // console.log(filter.clean("Don't be an assh0le"));
     if (msg.length > 0) {
       // badWordFilter(msg);
       let encodedMsg = filter.clean(msg);
@@ -78,34 +91,71 @@ export default function ChatInput({ handleSendMsg }) {
     )
       .then((response) => response.json())
       .then((response) => {
-        console.log("Message", msg);
-        console.log("decoded", response["censored-content"]);
+        // console.log("Message", msg);
+        // console.log("decoded", response["censored-content"]);
+
         handleSendMsg(response["censored-content"]);
         console.log(response);
+        console.log(response["censored-content"].includes("*"));
+        if (response["censored-content"].includes("*")) {
+          toast.warning(
+            "message contain hate. Please be kind to others",
+            toastOptions
+          );
+
+          console.log(response["bad-words-total"]);
+          setBad();
+        }
       })
       .catch((err) => console.error(err));
   };
 
+  const setBad = async () => {
+    const user = await JSON.parse(
+      localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
+    );
+    console.log("Before");
+    const { data } = await axios.post(`${setBadWordsCount}/${user._id}`, {});
+    console.log("After");
+
+    console.log("count data", data.banned);
+
+    if (data.banned) {
+      toast.error("Your account has been banned");
+      setTimeout(() => {
+        localStorage.clear();
+        //  navigate("/login");
+        navigate("/banned");
+      }, 5000);
+      // setTimeout(() => {
+      //   navigate("/login");
+      // }, 5000);
+    }
+  };
+
   return (
-    <Container>
-      <div className="button-container">
-        <div className="emoji">
-          <BsEmojiSmileFill onClick={handleEmojiPickerhideShow} />
-          {showEmojiPicker && <Picker onEmojiClick={handleEmojiClick} />}
+    <>
+      <Container>
+        <div className="button-container">
+          <div className="emoji">
+            <BsEmojiSmileFill onClick={handleEmojiPickerhideShow} />
+            {showEmojiPicker && <Picker onEmojiClick={handleEmojiClick} />}
+          </div>
         </div>
-      </div>
-      <form className="input-container" onSubmit={(event) => sendChat(event)}>
-        <input
-          type="text"
-          placeholder="type your message here"
-          onChange={(e) => setMsg(e.target.value)}
-          value={msg}
-        />
-        <button type="submit">
-          <IoMdSend />
-        </button>
-      </form>
-    </Container>
+        <form className="input-container" onSubmit={(event) => sendChat(event)}>
+          <input
+            type="text"
+            placeholder="type your message here"
+            onChange={(e) => setMsg(e.target.value)}
+            value={msg}
+          />
+          <button type="submit">
+            <IoMdSend />
+          </button>
+        </form>
+      </Container>
+      <ToastContainer />
+    </>
   );
 }
 
@@ -188,7 +238,7 @@ const Container = styled.div`
       display: flex;
       justify-content: center;
       align-items: center;
-      background-color: #9a86f3;
+      background-color: #06d6a0;
       border: none;
       @media screen and (min-width: 720px) and (max-width: 1080px) {
         padding: 0.3rem 1rem;

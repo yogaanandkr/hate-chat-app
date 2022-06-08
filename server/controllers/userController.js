@@ -7,6 +7,11 @@ module.exports.login = async (req, res, next) => {
     const user = await User.findOne({ username });
     if (!user)
       return res.json({ msg: "Incorrect Username or Password", status: false });
+    if (user.banned == true)
+      return res.json({
+        msg: "your account has been banned for being toxic",
+        status: false,
+      });
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid)
       return res.json({ msg: "Incorrect Username or Password", status: false });
@@ -22,10 +27,10 @@ module.exports.register = async (req, res, next) => {
     const { username, email, password } = req.body;
     const usernameCheck = await User.findOne({ username });
     if (usernameCheck)
-      return res.json({ msg: "Username already used", status: false });
+      return res.json({ msg: "Username already exists", status: false });
     const emailCheck = await User.findOne({ email });
     if (emailCheck)
-      return res.json({ msg: "Email already used", status: false });
+      return res.json({ msg: "Email already exists", status: false });
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
       email,
@@ -50,6 +55,38 @@ module.exports.getAllUsers = async (req, res, next) => {
     return res.json(users);
   } catch (ex) {
     next(ex);
+  }
+};
+
+module.exports.setBadWordsCount = async (req, res, next) => {
+  // console.log("Bad word function");
+  try {
+    const userId = req.params.id;
+    const currentUser = await User.findById(userId);
+
+    // Check if the bad word count is exceeded
+    var count = currentUser.badWordsTotal + 1;
+
+    if (count >= 1) {
+      await User.findByIdAndUpdate(userId, {
+        banned: true,
+      });
+      return res.json({
+        banned: true,
+      });
+    } else {
+      // Updating user bad word count
+      const updating = await User.findByIdAndUpdate(userId, {
+        badWordsTotal: count,
+      });
+      const again = await User.findById(userId);
+      console.log(again.badWordsTotal);
+      return res.json({
+        banned: false,
+      });
+    }
+  } catch (error) {
+    console.log(error);
   }
 };
 

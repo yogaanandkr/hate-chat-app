@@ -19,7 +19,6 @@ mongoose
     console.log("DB Connetion Successfull");
   })
   .catch((err) => {
-    console.log("Error DB Nakku");
     console.log(err.message);
   });
 
